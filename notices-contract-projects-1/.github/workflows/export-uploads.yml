@@ -1,0 +1,47 @@
+name: Export & Upload Web Builds
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 2 * * *' # daily at 02:00 UTC
+
+jobs:
+  export:
+    name: Export web build and upload
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install web dependencies
+        working-directory: PrelimPro-web
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+          fi
+
+      - name: Build web project
+        working-directory: PrelimPro-web
+        run: |
+          npm run build
+
+      - name: Export static site
+        working-directory: PrelimPro-web
+        run: |
+          echo "Exporting static site to web-exports"
+          npx next export -o web-exports || true
+
+      - name: Upload exports artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-exports-${{ github.run_id }}
+          path: |
+            PrelimPro-web/web-exports
+            PrelimPro-web/.next

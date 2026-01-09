@@ -1,0 +1,36 @@
+name: Build and Deploy Web
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        working-directory: PrelimPro-web
+        run: npm ci
+
+      - name: Build web export
+        working-directory: PrelimPro-web
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          publish_dir: ./PrelimPro-web/web-build
+          publish_branch: gh-pages
+          keep_files: false
+          github_token: ${{ secrets.GITHUB_TOKEN }}

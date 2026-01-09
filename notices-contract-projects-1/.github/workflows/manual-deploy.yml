@@ -1,0 +1,62 @@
+name: Manual Deploy Web
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_mode:
+        description: 'Deployment mode: static or node'
+        required: false
+        default: 'static'
+
+jobs:
+  manual-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install web dependencies
+        working-directory: PrelimPro-web
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+          fi
+
+      - name: Build web project
+        working-directory: PrelimPro-web
+        run: |
+          npm run build
+
+      - name: Export static site (if selected)
+        if: ${{ github.event.inputs.deploy_mode == 'static' }}
+        working-directory: PrelimPro-web
+        run: |
+          npx next export -o web-build
+
+      - name: Deploy static site to GitHub Pages
+        if: ${{ github.event.inputs.deploy_mode == 'static' }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          publish_dir: ./PrelimPro-web/web-build
+          publish_branch: gh-pages
+          keep_files: false
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package Node host artifact (if node)
+        if: ${{ github.event.inputs.deploy_mode == 'node' }}
+        working-directory: PrelimPro-web
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-node-artifact
+          path: |
+            ./.next
+            ./package.json
+            ./next.config.js
+            ./public

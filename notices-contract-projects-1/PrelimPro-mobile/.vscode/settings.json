@@ -1,0 +1,18 @@
+{
+  "search.exclude": {
+    "node_modules": true,
+    "android": true,
+    "ios": true
+  },
+  "files.exclude": {
+    "android": true,
+    "ios": true
+  },
+  "files.associations": {
+    "*.native.tsx": "typescriptreact",
+    "*.web.tsx": "typescriptreact"
+  },
+  "eslint.workingDirectories": [
+    { "mode": "auto" }
+  ]
+}

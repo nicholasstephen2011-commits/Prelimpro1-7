@@ -1,0 +1,63 @@
+name: Deploy Web on CI Success
+
+on:
+  workflow_run:
+    workflows: ["CI — Monorepo Checks"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_MODE: ${{ secrets.DEPLOY_MODE || 'static' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install web dependencies
+        working-directory: PrelimPro-web
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+          fi
+
+      - name: Build web project
+        working-directory: PrelimPro-web
+        run: |
+          npm run build
+
+      - name: Export static site (if DEPLOY_MODE=static)
+        if: env.DEPLOY_MODE == 'static'
+        working-directory: PrelimPro-web
+        run: |
+          echo "Exporting static site to web-build"
+          npx next export -o web-build
+
+      - name: Deploy static site to GitHub Pages
+        if: env.DEPLOY_MODE == 'static'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          publish_dir: ./PrelimPro-web/web-build
+          publish_branch: gh-pages
+          keep_files: false
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package Node host artifact (if DEPLOY_MODE=node)
+        if: env.DEPLOY_MODE == 'node'
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-node-artifact
+          path: |
+            PrelimPro-web/.next
+            PrelimPro-web/package.json
+            PrelimPro-web/next.config.js
+            PrelimPro-web/public

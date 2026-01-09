@@ -1,0 +1,13 @@
+{
+  "search.exclude": {
+    "node_modules": true,
+    ".next": true
+  },
+  "files.exclude": {
+    ".next": true
+  },
+  "eslint.workingDirectories": [
+    { "mode": "auto" }
+  ],
+  "editor.formatOnSave": true
+}
