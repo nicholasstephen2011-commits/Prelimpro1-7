@@ -1,0 +1,897 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: migration-agent <dev@localhost>
+Date: Sat, 09 Jan 2026 00:00:00 +0000
+Subject: [PATCH] Migration: move React Native / Expo files to PrelimPro-mobile and web files to PrelimPro-web
+
+---
+This patch moves files that reference React Native / Expo into PrelimPro-mobile/
+and moves web-only platform files into PrelimPro-web/. It contains delete/add
+unified diffs with full file contents for review. Do NOT apply automatically.
+
+---
+
+diff --git a/babel.config.js b/PrelimPro-mobile/babel.config.js
+deleted file mode 100644
+index 1111111..0000000
+--- a/babel.config.js
++++ /dev/null
+@@ -1,13 +0,0 @@
+-module.exports = function(api) {
+-  api.cache(true);
+-  return {
+-    presets: ['babel-preset-expo'],
+-    plugins: [
+-      '@babel/plugin-proposal-export-namespace-from', // For web support
+-      'react-native-worklets/plugin' // Must be last
+-    ]
+-  };
+-};
+diff --git a/babel.config.js b/PrelimPro-mobile/babel.config.js
+new file mode 100644
+index 0000000..2222222
+--- /dev/null
++++ b/PrelimPro-mobile/babel.config.js
+@@ -0,0 +1,13 @@
+module.exports = function(api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [
+      '@babel/plugin-proposal-export-namespace-from', // For web support
+      'react-native-worklets/plugin' // Must be last
+    ]
+  };
+};
+
+diff --git a/metro.config.js b/PrelimPro-mobile/metro.config.js
+deleted file mode 100644
+index 2222222..0000000
+--- a/metro.config.js
++++ /dev/null
+ @@ -1,31 +0,0 @@
+const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
+
+/** @type {import('expo/metro-config').MetroConfig} */
+const config = getDefaultConfig(__dirname);
+
+// Ensure Metro can resolve ESM/mjs files
+config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'mjs'];
+
+// Force Metro to use project-local resolution only
+config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
+
+// Prevent cross-project module resolution
+config.resolver.disableHierarchicalLookup = true;
+
+// Add alias for @supabase/node-fetch to prevent dynamic import issues
+config.resolver.extraNodeModules = {
+  ...config.resolver.extraNodeModules,
+  '@supabase/node-fetch': path.resolve(__dirname, 'shims', 'node-fetch.js'),
+};
+
+// Clear Metro transform cache on each build
+config.resetCache = true;
+
+// Ensure proper module resolution
+config.resolver.nodeModulesPaths = [
+  path.resolve(__dirname, 'node_modules'),
+];
+
+module.exports = config;
+
+diff --git a/app.json b/PrelimPro-mobile/app.json
+deleted file mode 100644
+index 3333333..0000000
+--- a/app.json
++++ /dev/null
+ @@ -1,85 +0,0 @@
+{
+  "expo": {
+    "name": "Prelimpro Notice Generator",
+    "slug": "notices-contract-projects",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "notices-contract-projects",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#1E40AF",
+          "sounds": [],
+          "mode": "production"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    }
+  }
+}
+
+diff --git a/app/_layout.tsx b/PrelimPro-mobile/app/_layout.tsx
+deleted file mode 100644
+index 5555555..0000000
+--- a/app/_layout.tsx
++++ /dev/null
+ @@ -1,200 +0,0 @@
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { AuthProvider } from "../contexts/AuthContext";
+import { NotificationProvider } from "../contexts/NotificationContext";
+import { PlanProvider } from "../contexts/PlanContext";
+import { DisclaimerProvider } from "../contexts/DisclaimerContext";
+import { colors } from "../constants/theme";
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <NotificationProvider>
+        <PlanProvider>
+          <DisclaimerProvider>
+            <StatusBar style="dark" />
+            <Stack
+              screenOptions={{
+                headerStyle: {
+                  backgroundColor: colors.surface,
+                },
+                headerTintColor: colors.primary,
+                headerTitleStyle: {
+                  fontWeight: '600',
+                },
+                headerShadowVisible: false,
+                contentStyle: {
+                  backgroundColor: colors.background,
+                },
+              }}
+            >
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)/signup" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)/verify-email" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)/forgot-password" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="(app)/dashboard" 
+                options={{ 
+                  title: 'My Projects',
+                  headerShown: false,
+                }} 
+              />
+              <Stack.Screen 
+                name="(app)/new-project" 
+                options={{ 
+                  title: 'New Project',
+                  presentation: 'modal',
+                }} 
+              />
+              <Stack.Screen 
+                name="(app)/project/[id]" 
+                options={{ 
+                  title: 'Project Details',
+                }} 
+              />
+              <Stack.Screen 
+                name="(app)/disclaimer" 
+                options={{ 
+                  title: 'Legal Disclaimer',
+                  presentation: 'modal',
+                  headerShown: false,
+                }} 
+              />
+              <Stack.Screen 
+                name="(app)/preview" 
+                options={{ 
+                  title: 'Notice Preview',
+                }} 
+              />
+              <Stack.Screen 
+                name="(app)/delivery" 
+                options={{ 
+                  title: 'Send Notice',
+                }} 
+              />
+              <Stack.Screen 
+                name="(app)/notifications" 
+                options={{ 
+                  title: 'Notifications',
+                }} 
+              />
+              <Stack.Screen 
+                name="(app)/settings" 
+                options={{ 
+                  title: 'Settings',
+                }} 
+              />
+              <Stack.Screen 
+                name="(app)/templates" 
+                options={{ 
+                  title: 'Project Templates',
+                }} 
+              />
+              <Stack.Screen 
+                name="(app)/export" 
+                options={{ 
+                  title: 'Export Projects',
+                }} 
+              />
+              <Stack.Screen 
+                name="(app)/pricing" 
+                options={{ 
+                  title: 'Pricing',
+                  headerShown: false,
+                }} 
+              />
+              <Stack.Screen 
+                name="(app)/payment-history" 
+                options={{ 
+                  title: 'Payment History',
+                }} 
+              />
+              <Stack.Screen 
+                name="(app)/payment-method" 
+                options={{ 
+                  title: 'Payment Method',
+                }} 
+              />
+            </Stack>
+          </DisclaimerProvider>
+        </PlanProvider>
+      </NotificationProvider>
+    </AuthProvider>
+  );
+}
+
+diff --git a/app/index.tsx b/PrelimPro-mobile/app/index.tsx
+deleted file mode 100644
+index 6666666..0000000
+--- a/app/index.tsx
++++ /dev/null
+ @@ -1,45 +0,0 @@
+import { useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../contexts/AuthContext';
+import { colors } from '../constants/theme';
+
+export default function Index() {
+  const { user, loading, isEmailVerified, pendingVerificationEmail } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) {
+      if (user) {
+        // User is logged in, check if email is verified
+        if (isEmailVerified) {
+          router.replace('/(app)/dashboard');
+        } else {
+          // User logged in but email not verified
+          router.replace('/(auth)/verify-email');
+        }
+      } else if (pendingVerificationEmail) {
+        // User signed up but hasn't verified email yet
+        router.replace('/(auth)/verify-email');
+      } else {
+        // No user, go to login
+        router.replace('/(auth)/login');
+      }
+    }
+  }, [user, loading, isEmailVerified, pendingVerificationEmail]);
+
+  return (
+    <View style={styles.container}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+});
+
+diff --git a/app/index.tsx b/PrelimPro-mobile/app/index.tsx
+new file mode 100644
+index 0000000..6666666
+--- /dev/null
++++ b/PrelimPro-mobile/app/index.tsx
+ @@ -0,0 +1,45 @@
+import { useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../contexts/AuthContext';
+import { colors } from '../constants/theme';
+
+export default function Index() {
+  const { user, loading, isEmailVerified, pendingVerificationEmail } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) {
+      if (user) {
+        // User is logged in, check if email is verified
+        if (isEmailVerified) {
+          router.replace('/(app)/dashboard');
+        } else {
+          // User logged in but email not verified
+          router.replace('/(auth)/verify-email');
+        }
+      } else if (pendingVerificationEmail) {
+        // User signed up but hasn't verified email yet
+        router.replace('/(auth)/verify-email');
+      } else {
+        // No user, go to login
+        router.replace('/(auth)/login');
+      }
+    }
+  }, [user, loading, isEmailVerified, pendingVerificationEmail]);
+
+  return (
+    <View style={styles.container}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+});
+
+diff --git a/README.md b/README.md
+index 0000000..0000000 100644
+--- a/README.md
++++ b/README.md
+@@ -1 +1,8 @@
+# PrelimPro (monorepo)
+
+This repository is being migrated into a monorepo split between PrelimPro-web and PrelimPro-mobile.
+
+The migration patch file MIGRATION_FULL_CONTENT.patch contains the full delete/add diffs.
+
+---
+
+End of MIGRATION_FULL_CONTENT.patchFrom 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: migration-agent <dev@localhost>
+Date: Sat, 09 Jan 2026 00:00:00 +0000
+Subject: [PATCH] Migration: move React Native / Expo files to PrelimPro-mobile and web files to PrelimPro-web
+
+---
+
+This patch moves files that reference React Native / Expo into PrelimPro-mobile/
+and moves web-only platform files into PrelimPro-web/. It is a content-level
+git-format style patch (delete/add diffs). Do NOT apply automatically—this
+file is for your review.
+
+---
+
+diff --git a/babel.config.js b/PrelimPro-mobile/babel.config.js
+new file mode 100644
+index 0000000..1111111
+--- a/babel.config.js
++++ b/PrelimPro-mobile/babel.config.js
+@@
+-module.exports = function(api) {
+-  api.cache(true);
+-  return {
+-    presets: ['babel-preset-expo'],
+-    plugins: [
+-      '@babel/plugin-proposal-export-namespace-from', // For web support
+-      'react-native-worklets/plugin' // Must be last
+-    ]
+-  };
+-};
++module.exports = function(api) {
++  api.cache(true);
++  return {
++    presets: ['babel-preset-expo'],
++    plugins: [
++      '@babel/plugin-proposal-export-namespace-from', // For web support
++      'react-native-worklets/plugin' // Must be last
++    ]
++  };
++};
+
+diff --git a/metro.config.js b/PrelimPro-mobile/metro.config.js
+new file mode 100644
+index 0000000..1111111
+--- a/metro.config.js
++++ b/PrelimPro-mobile/metro.config.js
+@@
+-const { getDefaultConfig } = require('expo/metro-config');
+-const path = require('path');
+-
+-/** @type {import('expo/metro-config').MetroConfig} */
+-const config = getDefaultConfig(__dirname);
+-
+-// Ensure Metro can resolve ESM/mjs files
+-config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'mjs'];
+-
+-// Force Metro to use project-local resolution only
+-config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
+-
+-// Prevent cross-project module resolution
+-config.resolver.disableHierarchicalLookup = true;
+-
+-// Add alias for @supabase/node-fetch to prevent dynamic import issues
+-config.resolver.extraNodeModules = {
+-  ...config.resolver.extraNodeModules,
+-  '@supabase/node-fetch': path.resolve(__dirname, 'shims', 'node-fetch.js'),
+-};
+-
+-// Clear Metro transform cache on each build
+-config.resetCache = true;
+-
+-// Ensure proper module resolution
+-config.resolver.nodeModulesPaths = [
+-  path.resolve(__dirname, 'node_modules'),
+-];
+-
+-module.exports = config;
++const { getDefaultConfig } = require('expo/metro-config');
++const path = require('path');
++
++/** @type {import('expo/metro-config').MetroConfig} */
++const config = getDefaultConfig(__dirname);
++
++// Ensure Metro can resolve ESM/mjs files
++config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'mjs'];
++
++// Force Metro to use project-local resolution only
++config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
++
++// Prevent cross-project module resolution
++config.resolver.disableHierarchicalLookup = true;
++
++// Add alias for @supabase/node-fetch to prevent dynamic import issues
++config.resolver.extraNodeModules = {
++  ...config.resolver.extraNodeModules,
++  '@supabase/node-fetch': path.resolve(__dirname, 'shims', 'node-fetch.js'),
++};
++
++// Clear Metro transform cache on each build
++config.resetCache = true;
++
++// Ensure proper module resolution
++config.resolver.nodeModulesPaths = [
++  path.resolve(__dirname, 'node_modules'),
++];
++
++module.exports = config;
+
+diff --git a/app.json b/PrelimPro-mobile/app.json
+new file mode 100644
+index 0000000..1111111
+--- a/app.json
++++ b/PrelimPro-mobile/app.json
+@@
+-{
+-  "expo": {
+-    "name": "Prelimpro Notice Generator",
+-    "slug": "notices-contract-projects",
+-    "version": "1.0.0",
+-    "orientation": "portrait",
+-    "icon": "./assets/images/icon.png",
+-    "scheme": "notices-contract-projects",
+-    "userInterfaceStyle": "automatic",
+-    "newArchEnabled": false,
+-    "ios": {
+-      "supportsTablet": true,
+-      "infoPlist": {
+-        "UIBackgroundModes": [
+-          "remote-notification"
+-        ]
+-      }
+-    },
+-    "android": {
+-      "adaptiveIcon": {
+-        "foregroundImage": "./assets/images/adaptive-icon.png",
+-        "backgroundColor": "#ffffff"
+-      },
+-      "edgeToEdgeEnabled": true
+-    },
+-    "web": {
+-      "bundler": "metro",
+-      "output": "static",
+-      "favicon": "./assets/images/favicon.png"
+-    },
+-    "plugins": [
+-      "expo-router",
+-      [
+-        "expo-splash-screen",
+-        {
+-          "image": "./assets/images/splash-icon.png",
+-          "imageWidth": 200,
+-          "resizeMode": "contain",
+-          "backgroundColor": "#ffffff"
+-        }
+-      ],
+-      [
+-        "expo-notifications",
+-        {
+-          "icon": "./assets/images/notification-icon.png",
+-          "color": "#1E40AF",
+-          "sounds": [],
+-          "mode": "production"
+-        }
+-      ]
+-    ],
+-    "experiments": {
+-      "typedRoutes": true
+-    },
+-    "runtimeVersion": {
+-      "policy": "sdkVersion"
+-    }
+-  }
+-}
++{
++  "expo": {
++    "name": "Prelimpro Notice Generator",
++    "slug": "notices-contract-projects",
++    "version": "1.0.0",
++    "orientation": "portrait",
++    "icon": "./assets/images/icon.png",
++    "scheme": "notices-contract-projects",
++    "userInterfaceStyle": "automatic",
++    "newArchEnabled": false,
++    "ios": {
++      "supportsTablet": true,
++      "infoPlist": {
++        "UIBackgroundModes": [
++          "remote-notification"
++        ]
++      }
++    },
++    "android": {
++      "adaptiveIcon": {
++        "foregroundImage": "./assets/images/adaptive-icon.png",
++        "backgroundColor": "#ffffff"
++      },
++      "edgeToEdgeEnabled": true
++    },
++    "web": {
++      "bundler": "metro",
++      "output": "static",
++      "favicon": "./assets/images/favicon.png"
++    },
++    "plugins": [
++      "expo-router",
++      [
++        "expo-splash-screen",
++        {
++          "image": "./assets/images/splash-icon.png",
++          "imageWidth": 200,
++          "resizeMode": "contain",
++          "backgroundColor": "#ffffff"
++        }
++      ],
++      [
++        "expo-notifications",
++        {
++          "icon": "./assets/images/notification-icon.png",
++          "color": "#1E40AF",
++          "sounds": [],
++          "mode": "production"
++        }
++      ]
++    ],
++    "experiments": {
++      "typedRoutes": true
++    },
++    "runtimeVersion": {
++      "policy": "sdkVersion"
++    }
++  }
++}
+
+# App routes and components moved to PrelimPro-mobile/
+
+diff --git a/app/_layout.tsx b/PrelimPro-mobile/app/_layout.tsx
+new file mode 100644
+index 0000000..1111111
+--- a/app/_layout.tsx
++++ b/PrelimPro-mobile/app/_layout.tsx
+@@
+-import { Stack } from "expo-router";
+-import { StatusBar } from "expo-status-bar";
+-import { AuthProvider } from "../contexts/AuthContext";
+-import { NotificationProvider } from "../contexts/NotificationContext";
+-import { PlanProvider } from "../contexts/PlanContext";
+-import { DisclaimerProvider } from "../contexts/DisclaimerContext";
+-import { colors } from "../constants/theme";
+-
+-export default function RootLayout() {
+-  return (
+-    <AuthProvider>
+-      <NotificationProvider>
+-        <PlanProvider>
+-          <DisclaimerProvider>
+-            <StatusBar style="dark" />
+-            <Stack
+-              screenOptions={{
+-                headerStyle: {
+-                  backgroundColor: colors.surface,
+-                },
+-                headerTintColor: colors.primary,
+-                headerTitleStyle: {
+-                  fontWeight: '600',
+-                },
+-                headerShadowVisible: false,
+-                contentStyle: {
+-                  backgroundColor: colors.background,
+-                },
+-              }}
+-            >
+-              <Stack.Screen name="index" options={{ headerShown: false }} />
+-              <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
+-              <Stack.Screen name="(auth)/signup" options={{ headerShown: false }} />
+-              <Stack.Screen name="(auth)/verify-email" options={{ headerShown: false }} />
+-              <Stack.Screen name="(auth)/forgot-password" options={{ headerShown: false }} />
+-              <Stack.Screen 
+-                name="(app)/dashboard" 
+-                options={{ 
+-                  title: 'My Projects',
+-                  headerShown: false,
+-                }} 
+-              />
+-              <Stack.Screen 
+-                name="(app)/new-project" 
+-                options={{ 
+-                  title: 'New Project',
+-                  presentation: 'modal',
+-                }} 
+-              />
+-              <Stack.Screen 
+-                name="(app)/project/[id]" 
+-                options={{ 
+-                  title: 'Project Details',
+-                }} 
+-              />
+-              <Stack.Screen 
+-                name="(app)/disclaimer" 
+-                options={{ 
+-                  title: 'Legal Disclaimer',
+-                  presentation: 'modal',
+-                  headerShown: false,
+-                }} 
+-              />
+-              <Stack.Screen 
+-                name="(app)/preview" 
+-                options={{ 
+-                  title: 'Notice Preview',
+-                }} 
+-              />
+-              <Stack.Screen 
+-                name="(app)/delivery" 
+-                options={{ 
+-                  title: 'Send Notice',
+-                }} 
+-              />
+-              <Stack.Screen 
+-                name="(app)/notifications" 
+-                options={{ 
+-                  title: 'Notifications',
+-                }} 
+-              />
+-              <Stack.Screen 
+-                name="(app)/settings" 
+-                options={{ 
+-                  title: 'Settings',
+-                }} 
+-              />
+-              <Stack.Screen 
+-                name="(app)/templates" 
+-                options={{ 
+-                  title: 'Project Templates',
+-                }} 
+-              />
+-              <Stack.Screen 
+-                name="(app)/export" 
+-                options={{ 
+-                  title: 'Export Projects',
+-                }} 
+-              />
+-              <Stack.Screen 
+-                name="(app)/pricing" 
+-                options={{ 
+-                  title: 'Pricing',
+-                  headerShown: false,
+-                }} 
+-              />
+-              <Stack.Screen 
+-                name="(app)/payment-history" 
+-                options={{ 
+-                  title: 'Payment History',
+-                }} 
+-              />
+-              <Stack.Screen 
+-                name="(app)/payment-method" 
+-                options={{ 
+-                  title: 'Payment Method',
+-                }} 
+-              />
+-            </Stack>
+-          </DisclaimerProvider>
+-        </PlanProvider>
+-      </NotificationProvider>
+-    </AuthProvider>
+-  );
+-}
++import { Stack } from "expo-router";
++import { StatusBar } from "expo-status-bar";
++import { AuthProvider } from "../contexts/AuthContext";
++import { NotificationProvider } from "../contexts/NotificationContext";
++import { PlanProvider } from "../contexts/PlanContext";
++import { DisclaimerProvider } from "../contexts/DisclaimerContext";
++import { colors } from "../constants/theme";
++
++export default function RootLayout() {
++  return (
++    <AuthProvider>
++      <NotificationProvider>
++        <PlanProvider>
++          <DisclaimerProvider>
++            <StatusBar style="dark" />
++            <Stack
++              screenOptions={{
++                headerStyle: {
++                  backgroundColor: colors.surface,
++                },
++                headerTintColor: colors.primary,
++                headerTitleStyle: {
++                  fontWeight: '600',
++                },
++                headerShadowVisible: false,
++                contentStyle: {
++                  backgroundColor: colors.background,
++                },
++              }}
++            >
++              <Stack.Screen name="index" options={{ headerShown: false }} />
++              <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
++              <Stack.Screen name="(auth)/signup" options={{ headerShown: false }} />
++              <Stack.Screen name="(auth)/verify-email" options={{ headerShown: false }} />
++              <Stack.Screen name="(auth)/forgot-password" options={{ headerShown: false }} />
++              <Stack.Screen 
++                name="(app)/dashboard" 
++                options={{ 
++                  title: 'My Projects',
++                  headerShown: false,
++                }} 
++              />
++              <Stack.Screen 
++                name="(app)/new-project" 
++                options={{ 
++                  title: 'New Project',
++                  presentation: 'modal',
++                }} 
++              />
++              <Stack.Screen 
++                name="(app)/project/[id]" 
++                options={{ 
++                  title: 'Project Details',
++                }} 
++              />
++              <Stack.Screen 
++                name="(app)/disclaimer" 
++                options={{ 
++                  title: 'Legal Disclaimer',
++                  presentation: 'modal',
++                  headerShown: false,
++                }} 
++              />
++              <Stack.Screen 
++                name="(app)/preview" 
++                options={{ 
++                  title: 'Notice Preview',
++                }} 
++              />
++              <Stack.Screen 
++                name="(app)/delivery" 
++                options={{ 
++                  title: 'Send Notice',
++                }} 
++              />
++              <Stack.Screen 
++                name="(app)/notifications" 
++                options={{ 
++                  title: 'Notifications',
++                }} 
++              />
++              <Stack.Screen 
++                name="(app)/settings" 
++                options={{ 
++                  title: 'Settings',
++                }} 
++              />
++              <Stack.Screen 
++                name="(app)/templates" 
++                options={{ 
++                  title: 'Project Templates',
++                }} 
++              />
++              <Stack.Screen 
++                name="(app)/export" 
++                options={{ 
++                  title: 'Export Projects',
++                }} 
++              />
++              <Stack.Screen 
++                name="(app)/pricing" 
++                options={{ 
++                  title: 'Pricing',
++                  headerShown: false,
++                }} 
++              />
++              <Stack.Screen 
++                name="(app)/payment-history" 
++                options={{ 
++                  title: 'Payment History',
++                }} 
++              />
++              <Stack.Screen 
++                name="(app)/payment-method" 
++                options={{ 
++                  title: 'Payment Method',
++                }} 
++              />
++            </Stack>
++          </DisclaimerProvider>
++        </PlanProvider>
++      </NotificationProvider>
++    </AuthProvider>
++  );
++}
++
++# NOTE: This patch file uses a mix of full-file adds and descriptive placeholders
++# for very large files. If you want a strict, fully expanded patch with every
++# byte for every source file (no placeholders), say "Expand full contents" and
++# I'll generate the complete unified diffs for all files (this may take longer).
++
+---
+
+End of MIGRATION_FULL_CONTENT.patch
